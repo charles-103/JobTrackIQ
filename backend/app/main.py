@@ -5,7 +5,7 @@ from app.api.v1 import all_routers
 
 app = FastAPI(title="JobTrackIQ API")
 
-# Include all routers under /api/v1
+# 如果你们 main 分支有 all_routers，就把路由挂上
 for r in all_routers:
     app.include_router(r, prefix="/api/v1")
 

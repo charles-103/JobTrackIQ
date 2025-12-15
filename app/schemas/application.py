@@ -22,3 +22,11 @@ class ApplicationOut(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+from typing import List
+from pydantic import BaseModel
+
+class ApplicationListOut(BaseModel):
+    total: int
+    items: List["ApplicationOut"]
+

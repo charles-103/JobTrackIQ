@@ -9,7 +9,13 @@ def create_application(db: Session, data: ApplicationCreate) -> Application:
     """
     Create a new job application
     """
-    obj = Application(**data.model_dump())
+    payload = data.model_dump()
+
+    # Ensure defaults (in case schema doesn't include these fields)
+    payload.setdefault("status", "active")
+    payload.setdefault("current_stage", "applied")
+
+    obj = Application(**payload)
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -20,11 +26,7 @@ def get_application(db: Session, application_id: int) -> Application | None:
     """
     Get a single application by ID
     """
-    return (
-        db.query(Application)
-        .filter(Application.id == application_id)
-        .first()
-    )
+    return db.query(Application).filter(Application.id == application_id).first()
 
 
 def list_applications(
@@ -61,5 +63,4 @@ def list_applications(
         q = q.order_by(desc(order_column))
 
     items = q.offset(offset).limit(limit).all()
-
     return total, items

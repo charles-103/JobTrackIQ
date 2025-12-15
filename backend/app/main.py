@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from app.core.database import test_db_connection
-from app.api.v1 import all_routers
+from backend.app.core.database import test_db_connection
+from backend.app.api.v1 import all_routers
 
 app = FastAPI(title="JobTrackIQ API")
 

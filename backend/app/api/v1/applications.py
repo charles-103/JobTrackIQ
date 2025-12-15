@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
-from app.schemas.application import ApplicationCreate, ApplicationOut
-from app.crud.crud_application import create_application, list_applications, get_application
+from backend.app.api.deps import get_db
+from backend.app.schemas.application import ApplicationCreate, ApplicationOut
+from backend.app.crud.crud_application import create_application, list_applications, get_application
 
 router = APIRouter(tags=["applications"])
 

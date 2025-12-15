@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-from app.core.config import DATABASE_URL
+from backend.app.core.config import DATABASE_URL
 
 # If you ever switch back to SQLite, this keeps it working.
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}

@@ -1,0 +1,11 @@
+# ---- UI ----
+streamlit>=1.32
+
+# ---- API calls ----
+requests>=2.31
+
+# ---- Data handling ----
+pandas>=2.2
+
+# ---- Visualization (later dashboards) ----
+altair>=5.2

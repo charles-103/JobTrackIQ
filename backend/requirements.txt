@@ -1,5 +1,31 @@
-fastapi==0.119.1
-uvicorn[standard]==0.34.0
-SQLAlchemy>=2.0.45
-pydantic==2.12.5
-python-dotenv==1.0.1
+# ---- Web framework ----
+fastapi>=0.110
+uvicorn[standard]>=0.27
+
+# ---- Database / ORM ----
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+alembic>=1.13
+
+# ---- Environment variables ----
+python-dotenv>=1.0
+
+# ---- Data validation / schemas ----
+pydantic>=2.6
+pydantic-settings>=2.2
+
+# ---- Utilities ----
+python-dateutil>=2.9
+typing-extensions>=4.9
+
+# ---- Testing (optional but recommended) ----
+pytest>=8.0
+httpx>=0.27
+
+# ---- ML / Data (used later in scripts/) ----
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.4
+
+# ---- Optional (for future NLP on JD parsing) ----
+scipy>=1.12

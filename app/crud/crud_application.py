@@ -1,30 +1,65 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import asc, desc
+
 from app.models.application import Application
 from app.schemas.application import ApplicationCreate
 
 
 def create_application(db: Session, data: ApplicationCreate) -> Application:
-    obj = Application(
-        company_name=data.company_name,
-        role_title=data.role_title,
-        channel=data.channel,
-        location=data.location,
-        jd_text=data.jd_text,
-        status="active",
-        current_stage="applied",
-    )
+    """
+    Create a new job application
+    """
+    obj = Application(**data.model_dump())
     db.add(obj)
     db.commit()
     db.refresh(obj)
     return obj
 
 
-def list_applications(db: Session, status: str | None = None) -> list[Application]:
+def get_application(db: Session, application_id: int) -> Application | None:
+    """
+    Get a single application by ID
+    """
+    return (
+        db.query(Application)
+        .filter(Application.id == application_id)
+        .first()
+    )
+
+
+def list_applications(
+    db: Session,
+    *,
+    status: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    order_by: str = "created_at",
+    order: str = "desc",
+) -> tuple[int, list[Application]]:
+    """
+    List applications with pagination, filtering and sorting
+    """
     q = db.query(Application)
+
     if status:
         q = q.filter(Application.status == status)
-    return q.order_by(Application.created_at.desc()).all()
 
+    total = q.count()
 
-def get_application(db: Session, application_id: int) -> Application | None:
-    return db.query(Application).filter(Application.id == application_id).first()
+    allowed_order_fields = {
+        "created_at": Application.created_at,
+        "updated_at": Application.updated_at,
+        "company_name": Application.company_name,
+        "role_title": Application.role_title,
+    }
+
+    order_column = allowed_order_fields.get(order_by, Application.created_at)
+
+    if order.lower() == "asc":
+        q = q.order_by(asc(order_column))
+    else:
+        q = q.order_by(desc(order_column))
+
+    items = q.offset(offset).limit(limit).all()
+
+    return total, items

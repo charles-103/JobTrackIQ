@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
+
 {% if db_error %}
   <div class="alert alert-danger">
     DB connection failed: {{ db_error }}
   </div>
 {% endif %}
-
 
 <h4 class="mb-3">Applications</h4>
 
@@ -90,10 +90,7 @@
                   {% endfor %}
                 </select>
 
-                <button
-                  class="btn btn-sm btn-outline-primary"
-                  type="submit"
-                >
+                <button class="btn btn-sm btn-outline-primary" type="submit">
                   Save
                 </button>
               </form>
@@ -138,7 +135,7 @@
     </div>
   </div>
 
-  <!-- ================= RIGHT: QUICK ADD ================= -->
+  <!-- ================= RIGHT: QUICK ADD + METRICS ================= -->
   <div class="col-lg-4">
 
     <!-- Quick add application -->
@@ -168,16 +165,27 @@
       </div>
     </div>
 
-    <!-- Metrics hint -->
+    <!-- Metrics -->
     <div class="card shadow-sm mt-3">
       <div class="card-body">
         <h6 class="mb-2">Metrics</h6>
-        <div class="text-muted small">
-          API endpoints:
-          <ul class="mb-0">
-            <li><code>/api/v1/metrics/overview</code></li>
-            <li><code>/api/v1/metrics/funnel</code></li>
-          </ul>
+
+        <div class="d-flex justify-content-between">
+          <div class="text-muted small">Total applications</div>
+          <div class="fw-semibold">{{ metrics_total }}</div>
+        </div>
+
+        <hr class="my-2"/>
+
+        {% for k, v in metrics_by_status.items() %}
+          <div class="d-flex justify-content-between">
+            <div class="text-muted small">{{ k }}</div>
+            <div class="fw-semibold">{{ v }}</div>
+          </div>
+        {% endfor %}
+
+        <div class="text-muted small mt-3">
+          (API: <code>/api/v1/metrics/overview</code>)
         </div>
       </div>
     </div>

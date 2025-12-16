@@ -4,7 +4,6 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
-
 from app.api.deps import get_db
 from app.crud.crud_application import (
     create_application,
@@ -13,6 +12,7 @@ from app.crud.crud_application import (
     update_application_status,
 )
 from app.crud.crud_event import add_event, list_events_for_application
+from app.crud.crud_metrics import metrics_overview
 from app.schemas.application import ApplicationCreate
 from app.schemas.event import EventCreate
 
@@ -29,6 +29,11 @@ def home(
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
+    # ✅ 永远给默认值，避免 except 时变量未定义
+    total, items = 0, []
+    overview = {"total_applications": 0, "by_status": {}}
+    db_error = None
+
     try:
         total, items = list_applications(
             db,
@@ -39,10 +44,8 @@ def home(
             order_by="created_at",
             order="desc",
         )
-        db_error = None
+        overview = metrics_overview(db)
     except SQLAlchemyError as e:
-        # DB 连接/查询失败时：页面仍然返回，只是显示错误
-        total, items = 0, []
         db_error = str(e)
 
     return templates.TemplateResponse(
@@ -56,10 +59,14 @@ def home(
             "status": status,
             "limit": limit,
             "offset": offset,
+            "metrics_total": overview["total_applications"],
+            "metrics_by_status": overview["by_status"],
             "db_error": db_error,
         },
-        status_code=200 if db_error is None else 500,
+        # ✅ UI 页面建议一直 200，把错误显示在页面上即可
+        status_code=200,
     )
+
 
 @router.post("/applications")
 def create_app_form(
@@ -78,7 +85,9 @@ def create_app_form(
             location=location,
         ),
     )
-    return RedirectResponse(url=f"/applications/{obj.id}", status_code=303)
+    # ✅ 注意 /ui 前缀
+    return RedirectResponse(url=f"/ui/applications/{obj.id}", status_code=303)
+
 
 @router.post("/applications/{application_id}/status")
 def update_status_form(
@@ -89,7 +98,7 @@ def update_status_form(
 ):
     update_application_status(db, application_id, status)
 
-    # 回到原页面（保留搜索/分页）
+    # ✅ 回到原页面（保留搜索/分页）
     url = redirect_to or "/ui/"
     return RedirectResponse(url=url, status_code=303)
 
@@ -102,7 +111,7 @@ def app_detail(
 ):
     app_obj = get_application(db, application_id)
     if not app_obj:
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/ui/", status_code=303)
 
     events = list_events_for_application(db, application_id, limit=200, offset=0)
 
@@ -114,6 +123,7 @@ def app_detail(
             "app": app_obj,
             "events": events,
         },
+        status_code=200,
     )
 
 
@@ -126,7 +136,8 @@ def add_event_form(
 ):
     app_obj = get_application(db, application_id)
     if not app_obj:
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/ui/", status_code=303)
 
     add_event(db, app_obj, EventCreate(event_type=event_type, notes=notes))
-    return RedirectResponse(url=f"/applications/{application_id}", status_code=303)
+    # ✅ 注意 /ui 前缀
+    return RedirectResponse(url=f"/ui/applications/{application_id}", status_code=303)

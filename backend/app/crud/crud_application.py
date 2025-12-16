@@ -71,3 +71,12 @@ def list_applications(
 
     items = q.offset(offset).limit(limit).all()
     return total, items
+
+def update_application_status(db: Session, application_id: int, status: str) -> Application | None:
+    obj = db.query(Application).filter(Application.id == application_id).first()
+    if not obj:
+        return None
+    obj.status = status
+    db.commit()
+    db.refresh(obj)
+    return obj

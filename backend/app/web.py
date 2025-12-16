@@ -6,7 +6,12 @@ from sqlalchemy.exc import SQLAlchemyError
 
 
 from app.api.deps import get_db
-from app.crud.crud_application import create_application, list_applications, get_application
+from app.crud.crud_application import (
+    create_application,
+    list_applications,
+    get_application,
+    update_application_status,
+)
 from app.crud.crud_event import add_event, list_events_for_application
 from app.schemas.application import ApplicationCreate
 from app.schemas.event import EventCreate
@@ -74,6 +79,19 @@ def create_app_form(
         ),
     )
     return RedirectResponse(url=f"/applications/{obj.id}", status_code=303)
+
+@router.post("/applications/{application_id}/status")
+def update_status_form(
+    application_id: int,
+    status: str = Form(...),
+    redirect_to: str | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    update_application_status(db, application_id, status)
+
+    # 回到原页面（保留搜索/分页）
+    url = redirect_to or "/ui/"
+    return RedirectResponse(url=url, status_code=303)
 
 
 @router.get("/applications/{application_id}")

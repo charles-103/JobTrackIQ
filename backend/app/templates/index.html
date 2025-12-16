@@ -7,57 +7,128 @@
 {% endif %}
 
 
+<h4 class="mb-3">Applications</h4>
+
 <div class="row g-3">
+
+  <!-- ================= LEFT: LIST ================= -->
   <div class="col-lg-8">
-    <div class="card shadow-sm">
+
+    <!-- Search / Filter -->
+    <div class="card shadow-sm mb-3">
       <div class="card-body">
-        <form class="row g-2" method="get" action="/">
+        <form class="row g-2" method="get" action="/ui/">
           <div class="col-md-6">
-            <input class="form-control" name="search" placeholder="Search company / role" value="{{ search or '' }}">
+            <input
+              class="form-control"
+              name="search"
+              placeholder="Search company / role"
+              value="{{ search or '' }}"
+            >
           </div>
+
           <div class="col-md-3">
             <select class="form-select" name="status">
               <option value="">All status</option>
               {% for s in ["active","rejected","offer","closed"] %}
-                <option value="{{s}}" {% if status==s %}selected{% endif %}>{{s}}</option>
+                <option value="{{ s }}" {% if status==s %}selected{% endif %}>
+                  {{ s }}
+                </option>
               {% endfor %}
             </select>
           </div>
+
           <div class="col-md-3 d-grid">
             <button class="btn btn-primary">Filter</button>
           </div>
         </form>
       </div>
+    </div>
 
+    <!-- Applications list -->
+    <div class="card shadow-sm">
       <div class="list-group list-group-flush">
+
         {% for a in items %}
-          <a class="list-group-item list-group-item-action" href="/applications/{{ a.id }}">
-            <div class="d-flex justify-content-between">
-              <div>
-                <div class="fw-semibold">{{ a.company_name }} — {{ a.role_title }}</div>
-                <div class="text-muted small">{{ a.location or "" }} · {{ a.channel or "" }}</div>
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+
+              <!-- Left: application info -->
+              <div class="flex-grow-1">
+                <a class="text-decoration-none" href="/ui/applications/{{ a.id }}">
+                  <div class="fw-semibold">
+                    {{ a.company_name }} — {{ a.role_title }}
+                  </div>
+                  <div class="text-muted small">
+                    {{ a.location or "" }}
+                    {% if a.channel %} · {{ a.channel }}{% endif %}
+                  </div>
+                </a>
               </div>
-              <span class="badge text-bg-secondary align-self-start">{{ a.status }}</span>
+
+              <!-- Right: inline status update -->
+              <form
+                class="d-flex align-items-center gap-2"
+                method="post"
+                action="/ui/applications/{{ a.id }}/status"
+              >
+                <input
+                  type="hidden"
+                  name="redirect_to"
+                  value="/ui/?search={{ search or '' }}&status={{ status or '' }}&limit={{ limit }}&offset={{ offset }}"
+                >
+
+                <select
+                  class="form-select form-select-sm"
+                  name="status"
+                  style="width: 140px;"
+                >
+                  {% for s in ["active","rejected","offer","closed"] %}
+                    <option value="{{ s }}" {% if a.status==s %}selected{% endif %}>
+                      {{ s }}
+                    </option>
+                  {% endfor %}
+                </select>
+
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  type="submit"
+                >
+                  Save
+                </button>
+              </form>
+
             </div>
-          </a>
+          </div>
         {% endfor %}
+
         {% if items|length == 0 %}
-          <div class="p-3 text-muted">No results.</div>
+          <div class="p-3 text-muted">No applications found.</div>
         {% endif %}
+
       </div>
 
+      <!-- Pagination -->
       <div class="card-body d-flex justify-content-between align-items-center">
-        <div class="text-muted small">Total: {{ total }}</div>
+        <div class="text-muted small">
+          Total: {{ total }}
+        </div>
+
         <div class="d-flex gap-2">
           {% if offset > 0 %}
-            <a class="btn btn-outline-secondary btn-sm"
-               href="/?search={{search or ''}}&status={{status or ''}}&limit={{limit}}&offset={{max(offset-limit,0)}}">
+            <a
+              class="btn btn-outline-secondary btn-sm"
+              href="/ui/?search={{ search or '' }}&status={{ status or '' }}&limit={{ limit }}&offset={{ max(offset-limit, 0) }}"
+            >
               Prev
             </a>
           {% endif %}
+
           {% if offset + limit < total %}
-            <a class="btn btn-outline-secondary btn-sm"
-               href="/?search={{search or ''}}&status={{status or ''}}&limit={{limit}}&offset={{offset+limit}}">
+            <a
+              class="btn btn-outline-secondary btn-sm"
+              href="/ui/?search={{ search or '' }}&status={{ status or '' }}&limit={{ limit }}&offset={{ offset + limit }}"
+            >
               Next
             </a>
           {% endif %}
@@ -67,37 +138,50 @@
     </div>
   </div>
 
+  <!-- ================= RIGHT: QUICK ADD ================= -->
   <div class="col-lg-4">
+
+    <!-- Quick add application -->
     <div class="card shadow-sm">
       <div class="card-body">
         <h6 class="mb-3">Quick Add Application</h6>
-        <form method="post" action="/applications">
+
+        <form method="post" action="/ui/applications">
           <div class="mb-2">
             <input class="form-control" name="company_name" placeholder="Company" required>
           </div>
+
           <div class="mb-2">
             <input class="form-control" name="role_title" placeholder="Role title" required>
           </div>
+
           <div class="mb-2">
             <input class="form-control" name="channel" placeholder="Channel (LinkedIn, etc)">
           </div>
+
           <div class="mb-2">
             <input class="form-control" name="location" placeholder="Location">
           </div>
+
           <button class="btn btn-success w-100">Create</button>
         </form>
       </div>
     </div>
 
+    <!-- Metrics hint -->
     <div class="card shadow-sm mt-3">
       <div class="card-body">
-        <h6 class="mb-2">Metrics (API)</h6>
+        <h6 class="mb-2">Metrics</h6>
         <div class="text-muted small">
-          See: <code>/api/v1/metrics/overview</code><br/>
-          See: <code>/api/v1/metrics/funnel</code>
+          API endpoints:
+          <ul class="mb-0">
+            <li><code>/api/v1/metrics/overview</code></li>
+            <li><code>/api/v1/metrics/funnel</code></li>
+          </ul>
         </div>
       </div>
     </div>
+
   </div>
 </div>
 

@@ -11,12 +11,18 @@ from app.crud.crud_application import (
     get_application,
     update_application_status,
 )
-from app.crud.crud_event import add_event, list_events_for_application
+from app.crud.crud_event import add_event, list_events_for_application, latest_events_for_applications
 from app.crud.crud_metrics import metrics_overview
 from app.schemas.application import ApplicationCreate
 from app.schemas.event import EventCreate
 
 templates = Jinja2Templates(directory="app/templates")
+def _fmt_dt(dt):
+    if not dt:
+        return ""
+    return dt.strftime("%Y-%m-%d %H:%M")
+
+templates.env.filters["dt"] = _fmt_dt
 router = APIRouter(prefix="/ui")
 
 
@@ -31,6 +37,7 @@ def home(
 ):
     # ✅ 永远给默认值，避免 except 时变量未定义
     total, items = 0, []
+    latest_events = {}
     overview = {"total_applications": 0, "by_status": {}}
     db_error = None
 
@@ -45,6 +52,7 @@ def home(
             order="desc",
         )
         overview = metrics_overview(db)
+        latest_events = latest_events_for_applications(db, [a.id for a in items])
     except SQLAlchemyError as e:
         db_error = str(e)
 
@@ -61,6 +69,7 @@ def home(
             "offset": offset,
             "metrics_total": overview["total_applications"],
             "metrics_by_status": overview["by_status"],
+            "latest_events": latest_events,
             "db_error": db_error,
         },
         # ✅ UI 页面建议一直 200，把错误显示在页面上即可

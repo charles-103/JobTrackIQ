@@ -63,6 +63,13 @@
                     {{ a.location or "" }}
                     {% if a.channel %} · {{ a.channel }}{% endif %}
                   </div>
+                  {% set le = latest_events.get(a.id) %}
+                  {% if le %}
+                    <div class="text-muted small">
+                      Last: <span class="fw-semibold">{{ le.event_type }}</span>
+                      · {{ le.event_time | dt }}
+                    </div>
+                  {% endif %}
                 </a>
               </div>
 

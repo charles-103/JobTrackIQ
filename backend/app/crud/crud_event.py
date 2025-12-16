@@ -1,8 +1,8 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
-from backend.app.models.application import Application
-from backend.app.models.event import Event
-from backend.app.schemas.event import EventCreate
+from app.models.application import Application
+from app.models.event import Event
+from app.schemas.event import EventCreate
 
 
 def add_event(db: Session, application: Application, data: EventCreate) -> Event:

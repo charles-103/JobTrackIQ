@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import get_db
-from backend.app.schemas.event import EventCreate, EventOut
-from backend.app.crud.crud_application import get_application
-from backend.app.crud.crud_event import add_event
+from app.api.deps import get_db
+from app.schemas.event import EventCreate, EventOut
+from app.crud.crud_application import get_application
+from app.crud.crud_event import add_event
 
 router = APIRouter(tags=["events"])
 

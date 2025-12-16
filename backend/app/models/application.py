@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import String, DateTime, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.app.core.database import Base
+from app.core.database import Base
 
 
 class Application(Base):

@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# repo root = .../JobTrackIQ
-REPO_ROOT = Path(__file__).resolve().parents[2]  # app/core/config.py -> app -> repo root
+# backend/app/core/config.py -> backend -> repo root
+REPO_ROOT = Path(__file__).resolve().parents[3]
 ENV_PATH = REPO_ROOT / ".env"
 
 load_dotenv(ENV_PATH)

@@ -1,13 +1,68 @@
+# =====================
 # Python
+# =====================
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual Environments
 .venv/
+venv/
+env/
 
-# Environment
+# =====================
+# Environment / Secrets
+# =====================
 .env
+.env.*
+*.env
 
-# Docker
+# =====================
+# IDEs
+# =====================
+# PyCharm / IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# =====================
+# OS
+# =====================
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# =====================
+# Logs
+# =====================
 *.log
 
-# OS
-.DS_Store
+# =====================
+# Testing / Coverage
+# =====================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =====================
+# Build / Dist
+# =====================
+build/
+dist/
+*.egg-info/
+
+# =====================
+# Databases / Local Data
+# =====================
+*.sqlite3
+*.db
+
+# =====================
+# Misc
+# =====================
+.cache/

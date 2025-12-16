@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+
+<a class="btn btn-link px-0" href="/">← Back</a>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="mb-1">{{ app.company_name }} — {{ app.role_title }}</h5>
+        <div class="text-muted small">
+          {{ app.location or "" }} · {{ app.channel or "" }} ·
+          <span class="badge text-bg-secondary">{{ app.status }}</span>
+        </div>
+        <div class="mt-3">
+          <div class="text-muted small">Stage: {{ app.current_stage }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-body">
+        <h6 class="mb-3">Add Event</h6>
+        <form method="post" action="/applications/{{ app.id }}/events">
+          <div class="mb-2">
+            <input class="form-control" name="event_type" placeholder="event_type (interview_1, rejection, offer)" required>
+          </div>
+          <div class="mb-2">
+            <textarea class="form-control" name="notes" placeholder="notes"></textarea>
+          </div>
+          <button class="btn btn-primary w-100">Add</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="mb-3">Timeline</h6>
+
+        {% for e in events %}
+          <div class="border rounded p-2 mb-2 bg-white">
+            <div class="d-flex justify-content-between">
+              <div class="fw-semibold">{{ e.event_type }}</div>
+              <div class="text-muted small">{{ e.event_time }}</div>
+            </div>
+            {% if e.notes %}
+              <div class="text-muted small mt-1">{{ e.notes }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        {% if events|length == 0 %}
+          <div class="text-muted">No events yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, or_
 
 from app.models.application import Application
 from app.schemas.application import ApplicationCreate
@@ -33,18 +33,25 @@ def list_applications(
     db: Session,
     *,
     status: str | None = None,
+    search: str | None = None,
     limit: int = 20,
     offset: int = 0,
     order_by: str = "created_at",
     order: str = "desc",
 ) -> tuple[int, list[Application]]:
-    """
-    List applications with pagination, filtering and sorting
-    """
     q = db.query(Application)
 
     if status:
         q = q.filter(Application.status == status)
+
+    if search:
+        pattern = f"%{search.strip()}%"
+        q = q.filter(
+            or_(
+                Application.company_name.ilike(pattern),
+                Application.role_title.ilike(pattern),
+            )
+        )
 
     total = q.count()
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func, and_
 from app.models.application import Application
 from app.models.event import Event
 from app.schemas.event import EventCreate
@@ -45,3 +45,31 @@ def delete_event(db: Session, event_id: int) -> bool:
     db.delete(obj)
     db.commit()
     return True
+
+def latest_events_for_applications(db: Session, application_ids: list[int]) -> dict[int, Event]:
+    if not application_ids:
+        return {}
+
+    subq = (
+        db.query(
+            Event.application_id.label("app_id"),
+            func.max(Event.event_time).label("max_time"),
+        )
+        .filter(Event.application_id.in_(application_ids))
+        .group_by(Event.application_id)
+        .subquery()
+    )
+
+    rows = (
+        db.query(Event)
+        .join(
+            subq,
+            and_(
+                Event.application_id == subq.c.app_id,
+                Event.event_time == subq.c.max_time,
+            ),
+        )
+        .all()
+    )
+
+    return {e.application_id: e for e in rows}

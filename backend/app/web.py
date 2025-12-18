@@ -11,17 +11,25 @@ from app.crud.crud_application import (
     get_application,
     update_application_status,
 )
-from app.crud.crud_event import add_event, delete_event, list_events_for_application, latest_events_for_applications
+from app.crud.crud_event import (
+    add_event,
+    delete_event,
+    list_events_for_application,
+    latest_events_for_applications,
+)
 from app.models.event import Event
 from app.crud.crud_metrics import metrics_overview
 from app.schemas.application import ApplicationCreate
 from app.schemas.event import EventCreate
 
 templates = Jinja2Templates(directory="app/templates")
+
+
 def _fmt_dt(dt):
     if not dt:
         return ""
     return dt.strftime("%Y-%m-%d %H:%M")
+
 
 templates.env.filters["dt"] = _fmt_dt
 router = APIRouter(prefix="/ui")
@@ -36,7 +44,6 @@ def home(
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
-    # ✅ 永远给默认值，避免 except 时变量未定义
     total, items = 0, []
     latest_events = {}
     overview = {"total_applications": 0, "by_status": {}}
@@ -73,7 +80,6 @@ def home(
             "latest_events": latest_events,
             "db_error": db_error,
         },
-        # ✅ UI 页面建议一直 200，把错误显示在页面上即可
         status_code=200,
     )
 
@@ -95,7 +101,6 @@ def create_app_form(
             location=location,
         ),
     )
-    # ✅ 注意 /ui 前缀
     return RedirectResponse(url=f"/ui/applications/{obj.id}", status_code=303)
 
 
@@ -107,16 +112,16 @@ def update_status_form(
     db: Session = Depends(get_db),
 ):
     update_application_status(db, application_id, status)
-
-    # ✅ 回到原页面（保留搜索/分页）
     url = redirect_to or "/ui/"
     return RedirectResponse(url=url, status_code=303)
 
 
+# ✅ 改动 1：支持 err 参数，把错误显示在详情页
 @router.get("/applications/{application_id}")
 def app_detail(
     request: Request,
     application_id: int,
+    err: str | None = None,   # ✅ 新增
     db: Session = Depends(get_db),
 ):
     app_obj = get_application(db, application_id)
@@ -132,11 +137,13 @@ def app_detail(
             "title": f"Application {application_id}",
             "app": app_obj,
             "events": events,
+            "err": err,  # ✅ 新增：模板可显示
         },
         status_code=200,
     )
 
 
+# ✅ 改动 2：捕获 ValueError（强约束 FSM 触发时），避免 UI 500
 @router.post("/applications/{application_id}/events")
 def add_event_form(
     application_id: int,
@@ -148,16 +155,21 @@ def add_event_form(
     if not app_obj:
         return RedirectResponse(url="/ui/", status_code=303)
 
-    add_event(db, app_obj, EventCreate(event_type=event_type, notes=notes))
-    # ✅ 注意 /ui 前缀
+    try:
+        add_event(db, app_obj, EventCreate(event_type=event_type, notes=notes))
+    except ValueError as e:
+        # ✅ 回详情页并显示错误，不让用户看到 500
+        # err 放 query string，简单可靠
+        return RedirectResponse(url=f"/ui/applications/{application_id}?err={str(e)}", status_code=303)
+
     return RedirectResponse(url=f"/ui/applications/{application_id}", status_code=303)
+
 
 @router.post("/events/{event_id}/delete", name="ui_event_delete")
 def delete_event_ui(
     event_id: int,
     db: Session = Depends(get_db),
 ):
-    # 先查出 application_id，保证删完能跳回正确详情页
     obj = db.query(Event).filter(Event.id == event_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Event not found")

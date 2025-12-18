@@ -10,15 +10,14 @@ router = APIRouter(tags=["events"])
 
 
 @router.post("/applications/{application_id}/events", response_model=EventOut)
-def create_event(
-    application_id: int,
-    data: EventCreate,
-    db: Session = Depends(get_db),
-):
+def create_event(application_id: int, data: EventCreate, db: Session = Depends(get_db)):
     app_obj = get_application(db, application_id)
     if not app_obj:
         raise HTTPException(status_code=404, detail="Application not found")
-    return add_event(db, app_obj, data)
+    try:
+        return add_event(db, app_obj, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/applications/{application_id}/events", response_model=list[EventOut])

@@ -91,12 +91,37 @@
         {% for e in events %}
           <div class="border rounded p-2 mb-2 bg-white">
             <div class="d-flex justify-content-between align-items-start">
-              <div class="fw-semibold">{{ e.event_type }}</div>
-              <div class="text-muted small">{{ e.event_time | dt }}</div>
+
+              <!-- Left: event info -->
+              <div>
+                <div class="fw-semibold">{{ e.event_type }}</div>
+                {% if e.notes %}
+                  <div class="text-muted small mt-1">{{ e.notes }}</div>
+              {% endif %}
+              </div>
+
+              <!-- Right: time + delete -->
+              <div class="d-flex align-items-center gap-2">
+                <div class="text-muted small">
+                  {{ e.event_time | dt }}
+                </div>
+
+                <form
+                  method="post"
+                  action="{{ request.url_for('ui_event_delete', event_id=e.id) }}"
+                  onsubmit="return confirm('Delete this event?')"
+                >
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-outline-danger"
+                    title="Delete event"
+                  >
+                    ✕
+                  </button>
+                </form>
+              </div>
+
             </div>
-            {% if e.notes %}
-              <div class="text-muted small mt-1">{{ e.notes }}</div>
-            {% endif %}
           </div>
         {% endfor %}
 

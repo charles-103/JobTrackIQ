@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Form
+from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -11,7 +11,8 @@ from app.crud.crud_application import (
     get_application,
     update_application_status,
 )
-from app.crud.crud_event import add_event, list_events_for_application, latest_events_for_applications
+from app.crud.crud_event import add_event, delete_event, list_events_for_application, latest_events_for_applications
+from app.models.event import Event
 from app.crud.crud_metrics import metrics_overview
 from app.schemas.application import ApplicationCreate
 from app.schemas.event import EventCreate
@@ -150,3 +151,21 @@ def add_event_form(
     add_event(db, app_obj, EventCreate(event_type=event_type, notes=notes))
     # ✅ 注意 /ui 前缀
     return RedirectResponse(url=f"/ui/applications/{application_id}", status_code=303)
+
+@router.post("/events/{event_id}/delete", name="ui_event_delete")
+def delete_event_ui(
+    event_id: int,
+    db: Session = Depends(get_db),
+):
+    # 先查出 application_id，保证删完能跳回正确详情页
+    obj = db.query(Event).filter(Event.id == event_id).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    app_id = obj.application_id
+
+    ok = delete_event(db, event_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    return RedirectResponse(url=f"/ui/applications/{app_id}", status_code=303)

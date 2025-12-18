@@ -191,13 +191,46 @@
           </div>
         {% endfor %}
 
-        <div class="text-muted small mt-3">
-          (API: <code>/api/v1/metrics/overview</code>)
+        <hr class="my-2"/>
+
+        <div class="d-flex justify-content-between">
+          <div class="text-muted small">Offer rate</div>
+          <div class="fw-semibold">{{ (offer_rate * 100) | round(1) }}%</div>
         </div>
+
+        <div class="d-flex justify-content-between">
+          <div class="text-muted small">Rejection rate</div>
+          <div class="fw-semibold">{{ (rejection_rate * 100) | round(1) }}%</div>
+        </div>
+
+        <hr class="my-2"/>
+
+        <div class="d-flex justify-content-between">
+          <div class="text-muted small">Avg days to interview</div>
+          <div class="fw-semibold">
+            {% if avg_days_to_interview is none %}-{% else %}{{ avg_days_to_interview | round(1) }}{% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+          <div class="text-muted small">Avg days to offer</div>
+          <div class="fw-semibold">
+            {% if avg_days_to_offer is none %}-{% else %}{{ avg_days_to_offer | round(1) }}{% endif %}
+          </div>
+        </div>
+
+        <hr class="my-2"/>
+
+        <div class="text-muted small mb-2">By channel</div>
+        {% for row in channels %}
+          <div class="d-flex justify-content-between">
+            <div class="text-muted small">{{ row.channel }}</div>
+            <div class="fw-semibold">{{ (row.offer_rate * 100) | round(0) }}%</div>
+          </div>
+        {% endfor %}
+
       </div>
     </div>
-
   </div>
 </div>
-
 {% endblock %}

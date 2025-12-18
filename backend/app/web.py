@@ -18,7 +18,7 @@ from app.crud.crud_event import (
     latest_events_for_applications,
 )
 from app.models.event import Event
-from app.crud.crud_metrics import metrics_overview
+from app.crud.crud_metrics import metrics_overview, metrics_time_to_milestones, metrics_by_channel
 from app.schemas.application import ApplicationCreate
 from app.schemas.event import EventCreate
 
@@ -60,6 +60,8 @@ def home(
             order="desc",
         )
         overview = metrics_overview(db)
+        timing = metrics_time_to_milestones(db)
+        channels = metrics_by_channel(db, min_samples=1)
         latest_events = latest_events_for_applications(db, [a.id for a in items])
     except SQLAlchemyError as e:
         db_error = str(e)
@@ -77,6 +79,11 @@ def home(
             "offset": offset,
             "metrics_total": overview["total_applications"],
             "metrics_by_status": overview["by_status"],
+            "offer_rate": overview["offer_rate"],
+            "rejection_rate": overview["rejection_rate"],
+            "avg_days_to_interview": timing["avg_days_to_interview"],
+            "avg_days_to_offer": timing["avg_days_to_offer"],
+            "channels": channels,
             "latest_events": latest_events,
             "db_error": db_error,
         },

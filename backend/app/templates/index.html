@@ -72,36 +72,6 @@
                   {% endif %}
                 </a>
               </div>
-
-              <!-- Right: inline status update -->
-              <form
-                class="d-flex align-items-center gap-2"
-                method="post"
-                action="/ui/applications/{{ a.id }}/status"
-              >
-                <input
-                  type="hidden"
-                  name="redirect_to"
-                  value="/ui/?search={{ search or '' }}&status={{ status or '' }}&limit={{ limit }}&offset={{ offset }}"
-                >
-
-                <select
-                  class="form-select form-select-sm"
-                  name="status"
-                  style="width: 140px;"
-                >
-                  {% for s in ["active","rejected","offer","closed"] %}
-                    <option value="{{ s }}" {% if a.status==s %}selected{% endif %}>
-                      {{ s }}
-                    </option>
-                  {% endfor %}
-                </select>
-
-                <button class="btn btn-sm btn-outline-primary" type="submit">
-                  Save
-                </button>
-              </form>
-
             </div>
           </div>
         {% endfor %}

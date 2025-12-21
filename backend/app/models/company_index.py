@@ -5,12 +5,16 @@ from sqlalchemy import String, Integer, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+from app.db import Base
+
+
 
 
 class CompanyIndex(Base):
     __tablename__ = "company_index"
 
     __table_args__ = (
+
         UniqueConstraint("normalized_name", name="uq_company_index_normalized_name"),
     )
 

@@ -30,6 +30,7 @@ def create_application_api(
 @router.get("/applications", response_model=ApplicationListOut)
 def list_applications_api(
     status: str | None = None,
+    search: str | None = Query(default=None, min_length=1),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     order_by: str = Query(default="created_at"),
@@ -42,6 +43,7 @@ def list_applications_api(
     total, items = list_applications(
         db,
         status=status,
+        search=search,
         limit=limit,
         offset=offset,
         order_by=order_by,

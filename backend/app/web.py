@@ -19,6 +19,7 @@ from app.crud.crud_event import (
 )
 from app.models.event import Event
 from app.crud.crud_metrics import metrics_overview, metrics_time_to_milestones, metrics_by_channel
+from app.crud.crud_company import upsert_company_index
 from app.schemas.application import ApplicationCreate
 from app.schemas.event import EventCreate
 
@@ -108,6 +109,7 @@ def create_app_form(
             location=location,
         ),
     )
+    upsert_company_index(db, name=company_name, source="user_input")
     return RedirectResponse(url=f"/ui/applications/{obj.id}", status_code=303)
 
 

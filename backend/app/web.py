@@ -45,9 +45,21 @@ def home(
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
+    # ✅ 默认值：无论 DB 是否可用/是否有数据，模板渲染都不会炸
     total, items = 0, []
-    latest_events = {}
-    overview = {"total_applications": 0, "by_status": {}}
+    latest_events: dict[int, list] | dict = {}
+
+    overview = {
+        "total_applications": 0,
+        "by_status": {},
+        "offer_rate": 0.0,
+        "rejection_rate": 0.0,
+    }
+    timing = {
+        "avg_days_to_interview": None,
+        "avg_days_to_offer": None,
+    }
+    channels = []
     db_error = None
 
     try:
@@ -60,13 +72,22 @@ def home(
             order_by="created_at",
             order="desc",
         )
-        overview = metrics_overview(db)
-        timing = metrics_time_to_milestones(db)
-        channels = metrics_by_channel(db, min_samples=1)
-        latest_events = latest_events_for_applications(db, [a.id for a in items])
+
+        # 这些 metrics 在“空库 / 表不存在 / 连接失败”等情况下都可能抛 SQLAlchemyError
+        overview = metrics_overview(db) or overview
+        timing = metrics_time_to_milestones(db) or timing
+        channels = metrics_by_channel(db, min_samples=1) or channels
+
+        # items 为空时也别查
+        if items:
+            latest_events = latest_events_for_applications(db, [a.id for a in items])
+        else:
+            latest_events = {}
     except SQLAlchemyError as e:
+        # ✅ 不让 UI 500，把错误显示到页面上
         db_error = str(e)
 
+    # ✅ 用 .get 防止 metrics 返回缺 key 导致 KeyError
     return templates.TemplateResponse(
         "index.html",
         {
@@ -78,12 +99,12 @@ def home(
             "status": status,
             "limit": limit,
             "offset": offset,
-            "metrics_total": overview["total_applications"],
-            "metrics_by_status": overview["by_status"],
-            "offer_rate": overview["offer_rate"],
-            "rejection_rate": overview["rejection_rate"],
-            "avg_days_to_interview": timing["avg_days_to_interview"],
-            "avg_days_to_offer": timing["avg_days_to_offer"],
+            "metrics_total": overview.get("total_applications", 0),
+            "metrics_by_status": overview.get("by_status", {}),
+            "offer_rate": overview.get("offer_rate", 0.0),
+            "rejection_rate": overview.get("rejection_rate", 0.0),
+            "avg_days_to_interview": timing.get("avg_days_to_interview"),
+            "avg_days_to_offer": timing.get("avg_days_to_offer"),
             "channels": channels,
             "latest_events": latest_events,
             "db_error": db_error,

@@ -25,3 +25,7 @@ app.include_router(web_router)
 def health():
     ok = test_db_connection()
     return {"status": "ok", "db": "ok" if ok else "failed"}
+
+from app.core.database import Base, engine
+Base.metadata.create_all(bind=engine)
+

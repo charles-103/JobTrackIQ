@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
 
+{% set EVENT_UI = {
+  "applied":    {"label":"Applied",    "badge":"secondary", "icon":"📝"},
+  "interview_1":{"label":"Interview 1","badge":"primary",   "icon":"📞"},
+  "interview_2":{"label":"Interview 2","badge":"primary",   "icon":"🎯"},
+  "follow_up":  {"label":"Follow-up",  "badge":"info",      "icon":"📨"},
+  "offer":      {"label":"Offer",      "badge":"success",   "icon":"🎉"},
+  "rejection":  {"label":"Rejected",   "badge":"danger",    "icon":"❌"},
+  "closed":     {"label":"Closed",     "badge":"dark",      "icon":"🔒"},
+  "reopen":     {"label":"Reopened",   "badge":"warning",   "icon":"🔓"},
+} %}
+
 {% if db_error %}
   <div class="alert alert-danger">
     DB connection failed: {{ db_error }}
@@ -63,15 +74,32 @@
                     {{ a.location or "" }}
                     {% if a.channel %} · {{ a.channel }}{% endif %}
                   </div>
+
                   {% set le = latest_events.get(a.id) %}
                   {% if le %}
+                    {% set ui = EVENT_UI.get(le.event_type, {"label": le.event_type, "badge":"secondary", "icon":"•"}) %}
                     <div class="text-muted small">
-                      Last: <span class="fw-semibold">{{ le.event_type }}</span>
-                      · {{ le.event_time | dt }}
+                      Last:
+                      <span class="badge text-bg-{{ ui.badge }}">{{ ui.icon }} {{ ui.label }}</span>
+                      <span class="ms-1">{{ le.event_time | dt }}</span>
                     </div>
                   {% endif %}
                 </a>
               </div>
+
+              <!-- Right: status -->
+              <div class="d-flex flex-column align-items-end gap-2" style="min-width: 120px;">
+                {% set STATUS_BADGE = {
+                  "active":"primary",
+                  "offer":"success",
+                  "rejected":"danger",
+                  "closed":"secondary"
+                } %}
+                {% set sb = STATUS_BADGE.get(a.status, "secondary") %}
+
+                <span class="badge text-bg-{{ sb }}">{{ a.status }}</span>
+              </div>
+
             </div>
           </div>
         {% endfor %}

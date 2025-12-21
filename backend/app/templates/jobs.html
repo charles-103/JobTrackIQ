@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Job Inbox</h4>
+  <a class="btn btn-outline-secondary btn-sm" href="/ui/">Back</a>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="mb-3">Add Job Posting (Manual)</h6>
+
+        {% if err %}
+          <div class="alert alert-danger">{{ err }}</div>
+        {% endif %}
+
+        <form method="post" action="/ui/jobs">
+          <div class="mb-2">
+            <input class="form-control" name="company_name" placeholder="Company" required>
+          </div>
+          <div class="mb-2">
+            <input class="form-control" name="role_title" placeholder="Role title" required>
+          </div>
+          <div class="mb-2">
+            <input class="form-control" name="location" placeholder="Location (optional)">
+          </div>
+          <div class="mb-2">
+            <input class="form-control" name="url" placeholder="Job URL (optional)">
+          </div>
+          <div class="mb-2">
+            <textarea class="form-control" name="jd_text" rows="6" placeholder="Paste JD text (optional)"></textarea>
+          </div>
+
+          <button class="btn btn-primary w-100">Save to Inbox</button>
+        </form>
+
+        <div class="text-muted small mt-2">
+          Tip: This avoids anti-bot issues and still lets you build a job dataset.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-body">
+
+        <form class="row g-2 mb-3" method="get" action="/ui/jobs">
+          <div class="col-md-9">
+            <input class="form-control" name="search" placeholder="Search company / role / location" value="{{ search or '' }}">
+          </div>
+          <div class="col-md-3 d-grid">
+            <button class="btn btn-outline-primary">Search</button>
+          </div>
+        </form>
+
+        <div class="text-muted small mb-2">Total: {{ total }}</div>
+
+        {% for j in items %}
+          <div class="border rounded p-3 mb-2 bg-white">
+            <div class="d-flex justify-content-between gap-3">
+              <div>
+                <div class="fw-semibold">{{ j.company_name }} — {{ j.role_title }}</div>
+                <div class="text-muted small">{{ j.location or "" }}</div>
+                {% if j.url %}
+                  <div class="small"><a href="{{ j.url }}" target="_blank">{{ j.url }}</a></div>
+                {% endif %}
+                <div class="text-muted small mt-1">Saved: {{ j.created_at | dt }}</div>
+              </div>
+
+              <div class="d-flex flex-column gap-2">
+                <!-- 预留：下一步做“一键转 Application” -->
+                <button class="btn btn-sm btn-outline-success" disabled title="Coming soon">
+                  Create Application
+                </button>
+              </div>
+            </div>
+
+            {% if j.jd_text %}
+              <div class="text-muted small mt-2" style="white-space: pre-wrap;">{{ j.jd_text[:300] }}{% if j.jd_text|length > 300 %}...{% endif %}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        {% if items|length == 0 %}
+          <div class="text-muted">No job postings yet.</div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

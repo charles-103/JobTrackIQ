@@ -23,6 +23,11 @@ from app.crud.crud_company import upsert_company_index
 from app.schemas.application import ApplicationCreate
 from app.schemas.event import EventCreate
 
+from app.crud.crud_job_posting import create_job_posting, list_job_postings
+from app.schemas.job_posting import JobPostingCreate
+from app.crud.crud_company import upsert_company_index
+
+
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -211,3 +216,56 @@ def delete_event_ui(
         raise HTTPException(status_code=404, detail="Event not found")
 
     return RedirectResponse(url=f"/ui/applications/{app_id}", status_code=303)
+
+@router.get("/jobs")
+def jobs_page(
+    request: Request,
+    search: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    err: str | None = None,
+    db: Session = Depends(get_db),
+):
+    total, items = list_job_postings(db, search=search, limit=limit, offset=offset)
+    return templates.TemplateResponse(
+        "jobs.html",
+        {
+            "request": request,
+            "title": "Job Inbox",
+            "items": items,
+            "total": total,
+            "search": search,
+            "limit": limit,
+            "offset": offset,
+            "err": err,
+        },
+        status_code=200,
+    )
+
+
+@router.post("/jobs")
+def jobs_create(
+    company_name: str = Form(...),
+    role_title: str = Form(...),
+    location: str | None = Form(None),
+    url: str | None = Form(None),
+    jd_text: str | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    try:
+        obj = create_job_posting(
+            db,
+            JobPostingCreate(
+                company_name=company_name,
+                role_title=role_title,
+                location=location,
+                url=url,
+                jd_text=jd_text,
+            ),
+        )
+        # 反哺 company_index
+        upsert_company_index(db, name=obj.company_name, source="manual")
+    except Exception as e:
+        return RedirectResponse(url=f"/ui/jobs?err={str(e)}", status_code=303)
+
+    return RedirectResponse(url="/ui/jobs", status_code=303)

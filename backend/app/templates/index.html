@@ -150,7 +150,15 @@
 
         <form method="post" action="/ui/applications">
           <div class="mb-2">
-            <input class="form-control" name="company_name" placeholder="Company" required>
+            <input
+              class="form-control"
+              name="company_name"
+              id="companyInput"
+              placeholder="Company"
+              required
+              list="companySuggestions"
+            >
+            <datalist id="companySuggestions"></datalist>
           </div>
 
           <div class="mb-2">
@@ -231,4 +239,31 @@
     </div>
   </div>
 </div>
+
+<script>
+  const input = document.getElementById("companyInput");
+  const datalist = document.getElementById("companySuggestions");
+  let timer = null;
+
+  if (input && datalist) {
+    input.addEventListener("input", () => {
+      const q = input.value.trim();
+      if (timer) clearTimeout(timer);
+
+      if (q.length < 2) {
+        datalist.innerHTML = "";
+        return;
+      }
+
+      timer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/v1/companies/suggest?q=${encodeURIComponent(q)}&limit=10`);
+          if (!res.ok) return;
+          const data = await res.json();
+          datalist.innerHTML = data.map(x => `<option value="${x.name}"></option>`).join("");
+        } catch (e) {}
+      }, 180);
+    });
+  }
+</script>
 {% endblock %}

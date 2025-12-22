@@ -37,6 +37,9 @@ from app.ingest.greenhouse import fetch_greenhouse_jobs
 from app.crud.crud_job_posting import upsert_job_posting  # 你之前加的通用 upsert
 from app.crud.crud_company import upsert_company_index
 
+import asyncio
+from app.ingest.greenhouse import fetch_greenhouse_jobs, fetch_greenhouse_job_detail
+
 
 templates = Jinja2Templates(directory="app/templates")
 
@@ -340,6 +343,7 @@ def job_to_application(
 async def ui_ingest_greenhouse(
     board_token: str = Form(...),
     company_name: str = Form(...),
+    fetch_jd: str | None = Form(None),  # ✅ checkbox: "on" or None
     db: Session = Depends(get_db),
 ):
     board_token = board_token.strip()
@@ -354,6 +358,37 @@ async def ui_ingest_greenhouse(
         msg = urllib.parse.quote(f"Greenhouse fetch failed: {e}")
         return RedirectResponse(url=f"/ui/jobs?err={msg}", status_code=303)
 
+    # ✅ 是否抓 JD
+    need_jd = (fetch_jd == "on")
+
+    # ✅ 并发限制（别太猛）
+    sem = asyncio.Semaphore(6)
+
+    async def _get_jd(job_id: int) -> str | None:
+        if not need_jd:
+            return None
+        async with sem:
+            try:
+                detail = await fetch_greenhouse_job_detail(board_token, job_id)
+                # Greenhouse detail 常见字段：content (HTML), title, location...
+                return detail.get("content")
+            except Exception:
+                return None
+
+    # 先准备任务（仅对有 id 的 job）
+    jd_map: dict[int, str | None] = {}
+    if need_jd:
+        tasks = []
+        ids = []
+        for j in jobs:
+            job_id = j.get("id")
+            if isinstance(job_id, int):
+                ids.append(job_id)
+                tasks.append(_get_jd(job_id))
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for job_id, res in zip(ids, results):
+            jd_map[job_id] = res if isinstance(res, str) else None
+
     upserted = 0
     for j in jobs:
         title = j.get("title") or ""
@@ -361,6 +396,11 @@ async def ui_ingest_greenhouse(
             continue
         location = (j.get("location") or {}).get("name")
         url = j.get("absolute_url")
+        job_id = j.get("id")
+
+        jd_text = None
+        if need_jd and isinstance(job_id, int):
+            jd_text = jd_map.get(job_id)
 
         obj = upsert_job_posting(
             db,
@@ -369,12 +409,13 @@ async def ui_ingest_greenhouse(
             role_title=title,
             location=location,
             url=url,
-            jd_text=None,
+            jd_text=jd_text,  # ✅ 现在存入
         )
         upserted += 1
-
-        # 反哺 company index（共用系统）
         upsert_company_index(db, name=obj.company_name, source="crawler")
 
-    ok_msg = urllib.parse.quote(f"Imported {len(jobs)} jobs (upserted {upserted}) from {board_token}")
+    ok_msg = urllib.parse.quote(
+        f"Imported {len(jobs)} jobs (upserted {upserted}) from {board_token}"
+        + (" with JD" if need_jd else "")
+    )
     return RedirectResponse(url=f"/ui/jobs?ok={ok_msg}", status_code=303)

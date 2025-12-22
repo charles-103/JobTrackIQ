@@ -27,7 +27,12 @@
           <div class="mb-2">
             <input class="form-control" name="company_name" placeholder="Company name (e.g. Airbnb)" required>
           </div>
-
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="fetch_jd" id="fetchJd">
+            <label class="form-check-label" for="fetchJd">
+              Fetch full JD (slower)
+            </label>
+          </div>
           <button class="btn btn-outline-primary w-100" type="submit">
             Import
           </button>

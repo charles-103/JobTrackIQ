@@ -33,3 +33,6 @@ scipy>=1.12
 # jinja development ----
 jinja2
 python-multipart
+
+# Greenhouse Connector ----
+httpx>=0.27.0

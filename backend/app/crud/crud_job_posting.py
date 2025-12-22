@@ -79,3 +79,33 @@ def delete_job_posting(db: Session, job_id: int) -> bool:
     db.delete(obj)
     db.commit()
     return True
+
+def upsert_job_posting(
+    db: Session,
+    *,
+    source: str,
+    company_name: str,
+    role_title: str,
+    location: str | None = None,
+    url: str | None = None,
+    jd_text: str | None = None,
+) -> JobPosting:
+    fp = build_fingerprint(company_name, role_title, location, url)
+
+    existing = db.query(JobPosting).filter(JobPosting.fingerprint == fp).first()
+    if existing:
+        return existing
+
+    obj = JobPosting(
+        source=source,
+        company_name=company_name.strip(),
+        role_title=role_title.strip(),
+        location=location.strip() if location else None,
+        url=url.strip() if url else None,
+        jd_text=jd_text.strip() if jd_text else None,
+        fingerprint=fp,
+    )
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj

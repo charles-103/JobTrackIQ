@@ -12,14 +12,42 @@
   <a class="btn btn-outline-secondary btn-sm" href="/ui/">Back</a>
 </div>
 
+
+
 <div class="row g-3">
   <div class="col-lg-5">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="mb-3">Import from Greenhouse</h6>
+
+        <form method="post" action="{{ request.url_for('ui_ingest_greenhouse') }}">
+          <div class="mb-2">
+            <input class="form-control" name="board_token" placeholder="Board token (e.g. airbnb)" required>
+          </div>
+          <div class="mb-2">
+            <input class="form-control" name="company_name" placeholder="Company name (e.g. Airbnb)" required>
+          </div>
+
+          <button class="btn btn-outline-primary w-100" type="submit">
+            Import
+          </button>
+        </form>
+
+        <div class="text-muted small mt-2">
+          Tip: Uses Greenhouse public job board API (no login).
+        </div>
+      </div>
+    </div>
+
     <div class="card shadow-sm">
       <div class="card-body">
         <h6 class="mb-3">Add Job Posting (Manual)</h6>
 
         {% if err %}
           <div class="alert alert-danger">{{ err }}</div>
+        {% endif %}
+        {% if ok %}
+          <div class="alert alert-success">{{ ok }}</div>
         {% endif %}
 
         <form method="post" action="/ui/jobs">

@@ -31,6 +31,11 @@ from app.crud.crud_company import upsert_company_index
 
 from app.crud.crud_job_posting import get_job_posting, delete_job_posting
 
+import urllib.parse
+
+from app.ingest.greenhouse import fetch_greenhouse_jobs
+from app.crud.crud_job_posting import upsert_job_posting  # 你之前加的通用 upsert
+from app.crud.crud_company import upsert_company_index
 
 
 templates = Jinja2Templates(directory="app/templates")
@@ -240,6 +245,7 @@ def jobs_page(
     limit: int = 20,
     offset: int = 0,
     err: str | None = None,
+    ok: str | None = None,
     db: Session = Depends(get_db),
 ):
     total, items = 0, []
@@ -261,6 +267,7 @@ def jobs_page(
             "limit": limit,
             "offset": offset,
             "err": err,
+            "ok": ok,
             "db_error": db_error,
         },
         status_code=200,
@@ -328,3 +335,46 @@ def job_to_application(
 
     # 跳转到详情页
     return RedirectResponse(url=f"/ui/applications/{app_obj.id}", status_code=303)
+
+@router.post("/ingest/greenhouse", name="ui_ingest_greenhouse")
+async def ui_ingest_greenhouse(
+    board_token: str = Form(...),
+    company_name: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    board_token = board_token.strip()
+    company_name = company_name.strip()
+
+    if not board_token or not company_name:
+        return RedirectResponse(url="/ui/jobs?err=board_token%20and%20company_name%20required", status_code=303)
+
+    try:
+        jobs = await fetch_greenhouse_jobs(board_token)
+    except Exception as e:
+        msg = urllib.parse.quote(f"Greenhouse fetch failed: {e}")
+        return RedirectResponse(url=f"/ui/jobs?err={msg}", status_code=303)
+
+    upserted = 0
+    for j in jobs:
+        title = j.get("title") or ""
+        if not title:
+            continue
+        location = (j.get("location") or {}).get("name")
+        url = j.get("absolute_url")
+
+        obj = upsert_job_posting(
+            db,
+            source="greenhouse",
+            company_name=company_name,
+            role_title=title,
+            location=location,
+            url=url,
+            jd_text=None,
+        )
+        upserted += 1
+
+        # 反哺 company index（共用系统）
+        upsert_company_index(db, name=obj.company_name, source="crawler")
+
+    ok_msg = urllib.parse.quote(f"Imported {len(jobs)} jobs (upserted {upserted}) from {board_token}")
+    return RedirectResponse(url=f"/ui/jobs?ok={ok_msg}", status_code=303)

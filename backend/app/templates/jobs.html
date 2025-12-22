@@ -78,9 +78,11 @@
 
               <div class="d-flex flex-column gap-2">
                 <!-- 预留：下一步做“一键转 Application” -->
-                <button class="btn btn-sm btn-outline-success" disabled title="Coming soon">
-                  Create Application
-                </button>
+                 <form method="post" action="{{ request.url_for('ui_job_to_application', job_id=j.id) }}">
+                  <button class="btn btn-sm btn-outline-success" type="submit">
+                    Create Application
+                  </button>
+                </form>
               </div>
             </div>
 

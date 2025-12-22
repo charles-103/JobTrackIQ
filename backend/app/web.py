@@ -29,6 +29,9 @@ from app.crud.crud_job_posting import create_job_posting, list_job_postings
 from app.schemas.job_posting import JobPostingCreate
 from app.crud.crud_company import upsert_company_index
 
+from app.crud.crud_job_posting import get_job_posting, delete_job_posting
+
+
 
 templates = Jinja2Templates(directory="app/templates")
 
@@ -289,3 +292,39 @@ def jobs_create(
         return RedirectResponse(url=f"/ui/jobs?err={str(e)}", status_code=303)
 
     return RedirectResponse(url="/ui/jobs", status_code=303)
+
+@router.post("/jobs/{job_id}/to-application", name="ui_job_to_application")
+def job_to_application(
+    job_id: int,
+    db: Session = Depends(get_db),
+):
+    job = get_job_posting(db, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job posting not found")
+
+    # 1) 创建 application
+    app_obj = create_application(
+        db,
+        ApplicationCreate(
+            company_name=job.company_name,
+            role_title=job.role_title,
+            channel=job.source,      # 你也可以改成 "job_inbox"
+            location=job.location,
+        ),
+    )
+
+    # 2) 反哺 company index（保持共用系统）
+    upsert_company_index(db, name=job.company_name, source="manual")
+
+    # 3) 写一条 applied event（让 workflow 一致）
+    try:
+        add_event(db, app_obj, EventCreate(event_type="applied", notes=f"Created from Job Inbox (job_id={job.id})"))
+    except ValueError:
+        # applied 一般不会触发限制，保险起见
+        pass
+
+    # 4) 可选：转换后从 inbox 删除（推荐）
+    delete_job_posting(db, job_id)
+
+    # 跳转到详情页
+    return RedirectResponse(url=f"/ui/applications/{app_obj.id}", status_code=303)

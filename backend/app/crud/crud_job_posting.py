@@ -8,6 +8,7 @@ from app.models.job_posting import JobPosting
 from app.schemas.job_posting import JobPostingCreate
 
 
+
 def _norm(s: str | None) -> str:
     if not s:
         return ""
@@ -67,3 +68,14 @@ def list_job_postings(
         .all()
     )
     return total, items
+
+def get_job_posting(db: Session, job_id: int) -> JobPosting | None:
+    return db.query(JobPosting).filter(JobPosting.id == job_id).first()
+
+def delete_job_posting(db: Session, job_id: int) -> bool:
+    obj = get_job_posting(db, job_id)
+    if not obj:
+        return False
+    db.delete(obj)
+    db.commit()
+    return True

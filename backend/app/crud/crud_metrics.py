@@ -37,7 +37,7 @@ def metrics_time_to_milestones(db: Session) -> dict:
     平均耗时（天）：
     - created_at -> first interview (interview_1 or interview_2)
     - created_at -> offer
-    仅对有对应事件的 application 计算
+    兼容 SQLite / Postgres
     """
 
     # first_interview_time per application
@@ -62,23 +62,47 @@ def metrics_time_to_milestones(db: Session) -> dict:
         .subquery()
     )
 
-    # avg days to interview
-    # SQLite 没有 AGE，使用 julianday 差值
-    avg_days_to_interview = (
-        db.query(
-            func.avg(func.julianday(interview_subq.c.first_interview_time) - func.julianday(Application.created_at))
-        )
-        .join(interview_subq, interview_subq.c.app_id == Application.id)
-        .scalar()
-    )
+    dialect = db.bind.dialect.name  # "postgresql" / "sqlite" / ...
 
-    avg_days_to_offer = (
-        db.query(
-            func.avg(func.julianday(offer_subq.c.offer_time) - func.julianday(Application.created_at))
+    if dialect == "postgresql":
+        # epoch seconds / 86400 -> days
+        avg_days_to_interview = (
+            db.query(
+                func.avg(
+                    func.extract("epoch", interview_subq.c.first_interview_time - Application.created_at) / 86400.0
+                )
+            )
+            .join(interview_subq, interview_subq.c.app_id == Application.id)
+            .scalar()
         )
-        .join(offer_subq, offer_subq.c.app_id == Application.id)
-        .scalar()
-    )
+
+        avg_days_to_offer = (
+            db.query(
+                func.avg(
+                    func.extract("epoch", offer_subq.c.offer_time - Application.created_at) / 86400.0
+                )
+            )
+            .join(offer_subq, offer_subq.c.app_id == Application.id)
+            .scalar()
+        )
+
+    else:
+        # SQLite fallback (julianday exists)
+        avg_days_to_interview = (
+            db.query(
+                func.avg(func.julianday(interview_subq.c.first_interview_time) - func.julianday(Application.created_at))
+            )
+            .join(interview_subq, interview_subq.c.app_id == Application.id)
+            .scalar()
+        )
+
+        avg_days_to_offer = (
+            db.query(
+                func.avg(func.julianday(offer_subq.c.offer_time) - func.julianday(Application.created_at))
+            )
+            .join(offer_subq, offer_subq.c.app_id == Application.id)
+            .scalar()
+        )
 
     return {
         "avg_days_to_interview": float(avg_days_to_interview) if avg_days_to_interview is not None else None,

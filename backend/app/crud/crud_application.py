@@ -21,6 +21,13 @@ def create_application(db: Session, data: ApplicationCreate) -> Application:
     db.refresh(obj)
     return obj
 
+def delete_application(db: Session, application_id: int) -> bool:
+    obj = db.query(Application).filter(Application.id == application_id).first()
+    if not obj:
+        return False
+    db.delete(obj)
+    db.commit()
+    return True
 
 def get_application(db: Session, application_id: int) -> Application | None:
     """

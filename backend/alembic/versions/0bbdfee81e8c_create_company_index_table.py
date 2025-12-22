@@ -65,7 +65,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_events_application_id'), 'events', ['application_id'], unique=False)
     op.create_index(op.f('ix_events_event_type'), 'events', ['event_type'], unique=False)
     op.create_index(op.f('ix_events_id'), 'events', ['id'], unique=False)
-    op.drop_table('docker_check')
+    op.execute("DROP TABLE IF EXISTS docker_check")
     # ### end Alembic commands ###
 
 

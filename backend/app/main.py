@@ -10,9 +10,6 @@ from app.core.database import Base, engine
 
 app = FastAPI(title="JobTrackIQ API")
 
-# 临时DB
-Base.metadata.create_all(bind=engine)
-
 # API 路由
 for r in all_routers:
     app.include_router(r, prefix="/api/v1")
@@ -27,5 +24,6 @@ def health():
     return {"status": "ok", "db": "ok" if ok else "failed"}
 
 from app.core.database import Base, engine
-Base.metadata.create_all(bind=engine)
+
+#Base.metadata.create_all(bind=engine)
 

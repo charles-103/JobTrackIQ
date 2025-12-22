@@ -98,8 +98,20 @@
                 {% set sb = STATUS_BADGE.get(a.status, "secondary") %}
 
                 <span class="badge text-bg-{{ sb }}">{{ a.status }}</span>
+                <!-- Delete -->
+                <form
+                  method="post"
+                  action="{{ request.url_for('ui_application_delete', application_id=a.id) }}"
+                  onsubmit="return confirm('Delete this application? This will also delete its events.');"
+                >
+                  <input
+                    type="hidden"
+                    name="redirect_to"
+                    value="/ui/?search={{ search or '' }}&status={{ status or '' }}&limit={{ limit }}&offset={{ offset }}"
+                  >
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                </form>
               </div>
-
             </div>
           </div>
         {% endfor %}

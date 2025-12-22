@@ -10,7 +10,9 @@ from app.crud.crud_application import (
     list_applications,
     get_application,
     update_application_status,
+    delete_application
 )
+
 from app.crud.crud_event import (
     add_event,
     delete_event,
@@ -138,6 +140,17 @@ def create_app_form(
     upsert_company_index(db, name=company_name, source="user_input")
     return RedirectResponse(url=f"/ui/applications/{obj.id}", status_code=303)
 
+@router.post("/applications/{application_id}/delete", name="ui_application_delete")
+def delete_application_ui(
+    application_id: int,
+    redirect_to: str | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    ok = delete_application(db, application_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    return RedirectResponse(url=(redirect_to or "/ui/"), status_code=303)
 
 @router.post("/applications/{application_id}/status")
 def update_status_form(
@@ -226,7 +239,14 @@ def jobs_page(
     err: str | None = None,
     db: Session = Depends(get_db),
 ):
-    total, items = list_job_postings(db, search=search, limit=limit, offset=offset)
+    total, items = 0, []
+    db_error = None
+
+    try:
+        total, items = list_job_postings(db, search=search, limit=limit, offset=offset)
+    except SQLAlchemyError as e:
+        db_error = str(e)
+
     return templates.TemplateResponse(
         "jobs.html",
         {
@@ -238,10 +258,10 @@ def jobs_page(
             "limit": limit,
             "offset": offset,
             "err": err,
+            "db_error": db_error,
         },
         status_code=200,
     )
-
 
 @router.post("/jobs")
 def jobs_create(

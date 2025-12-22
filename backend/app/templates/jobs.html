@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
+{% if db_error %}
+  <div class="alert alert-danger">
+    DB connection failed: {{ db_error }}
+  </div>
+{% endif %}
+
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0">Job Inbox</h4>

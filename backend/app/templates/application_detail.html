@@ -2,14 +2,14 @@
 {% block content %}
 
 {% set EVENT_UI = {
-  "applied":    {"label":"Applied",    "badge":"secondary", "icon":"📝"},
-  "interview_1":{"label":"Interview 1","badge":"primary",   "icon":"📞"},
-  "interview_2":{"label":"Interview 2","badge":"primary",   "icon":"🎯"},
-  "follow_up":  {"label":"Follow-up",  "badge":"info",      "icon":"📨"},
-  "offer":      {"label":"Offer",      "badge":"success",   "icon":"🎉"},
-  "rejection":  {"label":"Rejected",   "badge":"danger",    "icon":"❌"},
-  "closed":     {"label":"Closed",     "badge":"dark",      "icon":"🔒"},
-  "reopen":     {"label":"Reopened",   "badge":"warning",   "icon":"🔓"},
+  "applied":    {"label":"Applied",    "badge":"secondary", "icon":"AP"},
+  "interview_1":{"label":"Interview 1","badge":"primary",   "icon":"INT1"},
+  "interview_2":{"label":"Interview 2","badge":"primary",   "icon":"INT2"},
+  "follow_up":  {"label":"Follow-up",  "badge":"info",      "icon":"F/U"},
+  "offer":      {"label":"Offer",      "badge":"success",   "icon":"OFF"},
+  "rejection":  {"label":"Rejected",   "badge":"danger",    "icon":"X"},
+  "closed":     {"label":"Closed",     "badge":"dark",      "icon":"CL"},
+  "reopen":     {"label":"Reopened",   "badge":"warning",   "icon":"RE"},
 } %}
 
 {% if err %}
@@ -18,21 +18,20 @@
   </div>
 {% endif %}
 
-<a class="btn btn-link px-0" href="/ui/">← Back</a>
+<a class="btn btn-link px-0" href="/ui/"><- Back</a>
 
 <div class="row g-3">
-  <!-- LEFT -->
+  
   <div class="col-lg-5">
 
-    <!-- Application card -->
+    
     <div class="card shadow-sm">
       <div class="card-body">
-        <h5 class="mb-1">{{ app.company_name }} — {{ app.role_title }}</h5>
+        <h5 class="mb-1">{{ app.company_name }} - {{ app.role_title }}</h5>
 
         <div class="text-muted small">
           {{ app.location or "" }}
-          {% if app.channel %} · {{ app.channel }}{% endif %}
-          · <span class="badge text-bg-secondary">{{ app.status }}</span>
+          {% if app.channel %} | {{ app.channel }}{% endif %} | <span class="badge text-bg-secondary">{{ app.status }}</span>
         </div>
 
         <div class="mt-3">
@@ -40,7 +39,7 @@
         </div>
         {% set stage_ui = EVENT_UI.get(
             app.current_stage,
-            {"label": app.current_stage, "icon": "•", "badge": "secondary"}
+            {"label": app.current_stage, "icon": "*"badge": "secondary"}
         ) %}
 
         <div class="mt-3">
@@ -54,7 +53,7 @@
       </div>
     </div>
 
-    <!-- Quick Event Buttons (strong constraint + reopen) -->
+    
     <div class="card shadow-sm mt-3">
       <div class="card-body">
         <h6 class="mb-3">Quick Events</h6>
@@ -113,7 +112,7 @@
       </div>
     </div>
 
-    <!-- Manual Add Event -->
+    
     <div class="card shadow-sm mt-3">
       <div class="card-body">
         <h6 class="mb-3">Add Event (Manual)</h6>
@@ -136,7 +135,7 @@
 
   </div>
 
-  <!-- RIGHT -->
+  
   <div class="col-lg-7">
     <div class="card shadow-sm">
       <div class="card-body">
@@ -146,12 +145,12 @@
         </div>
 
         {% for e in events %}
-          {% set ui = EVENT_UI.get(e.event_type, {"label": e.event_type, "badge":"secondary", "icon":"•"}) %}
+          {% set ui = EVENT_UI.get(e.event_type, {"label": e.event_type, "badge":"secondary", "icon":"�?}) %}
 
           <div class="border rounded p-3 mb-2 bg-white">
             <div class="d-flex justify-content-between align-items-start gap-3">
 
-              <!-- Left -->
+              
               <div class="d-flex gap-2">
                 <div style="font-size: 1.2rem; line-height: 1;">
                   {{ ui.icon }}
@@ -161,7 +160,7 @@
                   <div class="d-flex align-items-center gap-2">
                     <span class="badge text-bg-{{ ui.badge }}">{{ ui.label }}</span>
 
-                    <!-- 终态提示 -->
+                    
                     {% if e.event_type in ["offer","rejection","closed"] %}
                       <span class="badge text-bg-light border">Final</span>
                     {% endif %}
@@ -176,7 +175,7 @@
                 </div>
               </div>
 
-              <!-- Right -->
+              
               <div class="d-flex align-items-center gap-2">
                 <div class="text-muted small">{{ e.event_time | dt }}</div>
 
@@ -185,7 +184,7 @@
                   action="{{ request.url_for('ui_event_delete', event_id=e.id) }}"
                   onsubmit="return confirm('Delete this event?')"
                 >
-                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete event">✕</button>
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete event">�?/button>
                 </form>
               </div>
 
@@ -202,3 +201,7 @@
 </div>
 
 {% endblock %}
+
+
+
+

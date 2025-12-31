@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from sqlalchemy import String, Integer, DateTime, Text, UniqueConstraint
+from sqlalchemy import String, Integer, DateTime, Text, UniqueConstraint, ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 
 from app.core.database import Base
 
@@ -27,6 +28,8 @@ class JobPosting(Base):
     posted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     jd_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processed_jd: Mapped[str | None] = mapped_column(Text, nullable=True)
+    key_skills: Mapped[list[str] | None] = mapped_column(PG_ARRAY(String), nullable=True)
 
     fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 

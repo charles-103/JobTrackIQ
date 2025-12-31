@@ -2,14 +2,14 @@
 {% block content %}
 
 {% set EVENT_UI = {
-  "applied":    {"label":"Applied",    "badge":"secondary", "icon":"📝"},
-  "interview_1":{"label":"Interview 1","badge":"primary",   "icon":"📞"},
-  "interview_2":{"label":"Interview 2","badge":"primary",   "icon":"🎯"},
-  "follow_up":  {"label":"Follow-up",  "badge":"info",      "icon":"📨"},
-  "offer":      {"label":"Offer",      "badge":"success",   "icon":"🎉"},
-  "rejection":  {"label":"Rejected",   "badge":"danger",    "icon":"❌"},
-  "closed":     {"label":"Closed",     "badge":"dark",      "icon":"🔒"},
-  "reopen":     {"label":"Reopened",   "badge":"warning",   "icon":"🔓"},
+  "applied":    {"label":"Applied",    "badge":"secondary", "icon":"AP"},
+  "interview_1":{"label":"Interview 1","badge":"primary",   "icon":"INT1"},
+  "interview_2":{"label":"Interview 2","badge":"primary",   "icon":"INT2"},
+  "follow_up":  {"label":"Follow-up",  "badge":"info",      "icon":"F/U"},
+  "offer":      {"label":"Offer",      "badge":"success",   "icon":"OFF"},
+  "rejection":  {"label":"Rejected",   "badge":"danger",    "icon":"X"},
+  "closed":     {"label":"Closed",     "badge":"dark",      "icon":"CL"},
+  "reopen":     {"label":"Reopened",   "badge":"warning",   "icon":"RE"},
 } %}
 
 {% if db_error %}
@@ -68,16 +68,16 @@
               <div class="flex-grow-1">
                 <a class="text-decoration-none" href="/ui/applications/{{ a.id }}">
                   <div class="fw-semibold">
-                    {{ a.company_name }} — {{ a.role_title }}
+                    {{ a.company_name }} - {{ a.role_title }}
                   </div>
                   <div class="text-muted small">
                     {{ a.location or "" }}
-                    {% if a.channel %} · {{ a.channel }}{% endif %}
+                    {% if a.channel %} | {{ a.channel }}{% endif %}
                   </div>
 
                   {% set le = latest_events.get(a.id) %}
                   {% if le %}
-                    {% set ui = EVENT_UI.get(le.event_type, {"label": le.event_type, "badge":"secondary", "icon":"•"}) %}
+                    {% set ui = EVENT_UI.get(le.event_type, {"label": le.event_type, "badge":"secondary", "icon":"*"}) %}
                     <div class="text-muted small">
                       Last:
                       <span class="badge text-bg-{{ ui.badge }}">{{ ui.icon }} {{ ui.label }}</span>
@@ -279,3 +279,5 @@
   }
 </script>
 {% endblock %}
+
+

@@ -39,6 +39,10 @@ from app.crud.crud_company import upsert_company_index
 
 import asyncio
 from app.ingest.greenhouse import fetch_greenhouse_jobs, fetch_greenhouse_job_detail
+from app.ingest.lever import fetch_lever_jobs
+from app.ingest.smartrecruiters import fetch_smartrecruiters_jobs
+from app.ingest.workday import fetch_workday_jobs
+from app.ingest.unified import smart_import, get_job_details
 
 
 templates = Jinja2Templates(directory="app/templates")
@@ -63,7 +67,7 @@ def home(
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
-    # ✅ 默认值：无论 DB 是否可用/是否有数据，模板渲染都不会炸
+    # �?默认值：无论 DB 是否可用/是否有数据，模板渲染都不会炸
     total, items = 0, []
     latest_events: dict[int, list] | dict = {}
 
@@ -91,7 +95,7 @@ def home(
             order="desc",
         )
 
-        # 这些 metrics 在“空库 / 表不存在 / 连接失败”等情况下都可能抛 SQLAlchemyError
+        # 这些 metrics 在“空�?/ 表不存在 / 连接失败”等情况下都可能�?SQLAlchemyError
         overview = metrics_overview(db) or overview
         timing = metrics_time_to_milestones(db) or timing
         channels = metrics_by_channel(db, min_samples=1) or channels
@@ -102,10 +106,10 @@ def home(
         else:
             latest_events = {}
     except SQLAlchemyError as e:
-        # ✅ 不让 UI 500，把错误显示到页面上
+        # �?不让 UI 500，把错误显示到页面上
         db_error = str(e)
 
-    # ✅ 用 .get 防止 metrics 返回缺 key 导致 KeyError
+    # �?�?.get 防止 metrics 返回�?key 导致 KeyError
     return templates.TemplateResponse(
         "index.html",
         {
@@ -175,12 +179,12 @@ def update_status_form(
     return RedirectResponse(url=url, status_code=303)
 
 
-# ✅ 改动 1：支持 err 参数，把错误显示在详情页
+# �?改动 1：支�?err 参数，把错误显示在详情页
 @router.get("/applications/{application_id}")
 def app_detail(
     request: Request,
     application_id: int,
-    err: str | None = None,   # ✅ 新增
+    err: str | None = None,   # �?新增
     db: Session = Depends(get_db),
 ):
     app_obj = get_application(db, application_id)
@@ -196,13 +200,13 @@ def app_detail(
             "title": f"Application {application_id}",
             "app": app_obj,
             "events": events,
-            "err": err,  # ✅ 新增：模板可显示
+            "err": err,  # �?新增：模板可显示
         },
         status_code=200,
     )
 
 
-# ✅ 改动 2：捕获 ValueError（强约束 FSM 触发时），避免 UI 500
+# �?改动 2：捕�?ValueError（强约束 FSM 触发时），避�?UI 500
 @router.post("/applications/{application_id}/events")
 def add_event_form(
     application_id: int,
@@ -217,11 +221,10 @@ def add_event_form(
     try:
         add_event(db, app_obj, EventCreate(event_type=event_type, notes=notes))
     except ValueError as e:
-        # ✅ 回详情页并显示错误，不让用户看到 500
-        # err 放 query string，简单可靠
-        return RedirectResponse(url=f"/ui/applications/{application_id}?err={str(e)}", status_code=303)
+        # �?回详情页并显示错误，不让用户看到 500
+        # err �?query string，简单可�?        return RedirectResponse(url=f"/ui/applications/{application_id}?err={str(e)}", status_code=303)
 
-    return RedirectResponse(url=f"/ui/applications/{application_id}", status_code=303)
+        return RedirectResponse(url=f"/ui/applications/{application_id}", status_code=303)
 
 
 @router.post("/events/{event_id}/delete", name="ui_event_delete")
@@ -326,7 +329,7 @@ def job_to_application(
     # 2) 反哺 company index（保持共用系统）
     upsert_company_index(db, name=job.company_name, source="manual")
 
-    # 3) 写一条 applied event（让 workflow 一致）
+    # 3) 写一�?applied event（让 workflow 一致）
     try:
         add_event(db, app_obj, EventCreate(event_type="applied", notes=f"Created from Job Inbox (job_id={job.id})"))
     except ValueError:
@@ -343,7 +346,7 @@ def job_to_application(
 async def ui_ingest_greenhouse(
     board_token: str = Form(...),
     company_name: str = Form(...),
-    fetch_jd: str | None = Form(None),  # ✅ checkbox: "on" or None
+    fetch_jd: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
     board_token = board_token.strip()
@@ -358,26 +361,20 @@ async def ui_ingest_greenhouse(
         msg = urllib.parse.quote(f"Greenhouse fetch failed: {e}")
         return RedirectResponse(url=f"/ui/jobs?err={msg}", status_code=303)
 
-    # ✅ 是否抓 JD
-    need_jd = (fetch_jd == "on")
-
-    # ✅ 并发限制（别太猛）
-    sem = asyncio.Semaphore(6)
-
-    async def _get_jd(job_id: int) -> str | None:
-        if not need_jd:
-            return None
-        async with sem:
-            try:
-                detail = await fetch_greenhouse_job_detail(board_token, job_id)
-                # Greenhouse detail 常见字段：content (HTML), title, location...
-                return detail.get("content")
-            except Exception:
-                return None
-
-    # 先准备任务（仅对有 id 的 job）
+    fetch_full_jd = fetch_jd == "on"
     jd_map: dict[int, str | None] = {}
-    if need_jd:
+
+    if fetch_full_jd:
+        sem = asyncio.Semaphore(6)
+
+        async def _get_jd(job_id: int) -> str | None:
+            async with sem:
+                try:
+                    detail = await fetch_greenhouse_job_detail(board_token, job_id)
+                    return detail.get("content")
+                except Exception:
+                    return None
+
         tasks = []
         ids = []
         for j in jobs:
@@ -399,7 +396,7 @@ async def ui_ingest_greenhouse(
         job_id = j.get("id")
 
         jd_text = None
-        if need_jd and isinstance(job_id, int):
+        if fetch_full_jd and isinstance(job_id, int):
             jd_text = jd_map.get(job_id)
 
         obj = upsert_job_posting(
@@ -409,13 +406,236 @@ async def ui_ingest_greenhouse(
             role_title=title,
             location=location,
             url=url,
-            jd_text=jd_text,  # ✅ 现在存入
+            jd_text=jd_text,
         )
         upserted += 1
         upsert_company_index(db, name=obj.company_name, source="crawler")
 
     ok_msg = urllib.parse.quote(
         f"Imported {len(jobs)} jobs (upserted {upserted}) from {board_token}"
-        + (" with JD" if need_jd else "")
     )
     return RedirectResponse(url=f"/ui/jobs?ok={ok_msg}", status_code=303)
+
+
+@router.post("/ingest/lever", name="ui_ingest_lever")
+async def ui_ingest_lever(
+    site: str = Form(...),
+    company_name: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    site = site.strip()
+    company_name = company_name.strip()
+
+    if not site or not company_name:
+        return RedirectResponse(url="/ui/jobs?err=site%20and%20company_name%20required", status_code=303)
+
+    try:
+        jobs = await fetch_lever_jobs(site)
+    except Exception as e:
+        msg = urllib.parse.quote(f"Lever fetch failed: {e}")
+        return RedirectResponse(url=f"/ui/jobs?err={msg}", status_code=303)
+
+    upserted = 0
+    for j in jobs:
+        title = j.get("text") or j.get("title") or ""
+        if not title:
+            continue
+        location = j.get("categories", {}).get("location") if isinstance(j.get("categories"), dict) else None
+        url = j.get("hostedUrl") or j.get("applyUrl")
+
+        obj = upsert_job_posting(
+            db,
+            source="lever",
+            company_name=company_name,
+            role_title=title,
+            location=location,
+            url=url,
+            jd_text=j.get("descriptionPlain") or j.get("description"),
+        )
+        upserted += 1
+        upsert_company_index(db, name=obj.company_name, source="crawler")
+
+    ok_msg = urllib.parse.quote(f"Imported {len(jobs)} jobs (upserted {upserted}) from Lever site: {site}")
+    return RedirectResponse(url=f"/ui/jobs?ok={ok_msg}", status_code=303)
+
+
+@router.post("/ingest/smartrecruiters", name="ui_ingest_smartrecruiters")
+async def ui_ingest_smartrecruiters(
+    company_identifier: str = Form(...),
+    company_name: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    company_identifier = company_identifier.strip()
+    company_name = company_name.strip()
+
+    if not company_identifier or not company_name:
+        return RedirectResponse(url="/ui/jobs?err=company_identifier%20and%20company_name%20required", status_code=303)
+
+    try:
+        jobs = await fetch_smartrecruiters_jobs(company_identifier)
+    except Exception as e:
+        msg = urllib.parse.quote(f"SmartRecruiters fetch failed: {e}")
+        return RedirectResponse(url=f"/ui/jobs?err={msg}", status_code=303)
+
+    upserted = 0
+    for j in jobs:
+        title = j.get("name") or j.get("title") or ""
+        if not title:
+            continue
+        location = j.get("location", {}).get("city") if isinstance(j.get("location"), dict) else None
+        url = j.get("ref") or j.get("url")
+
+        obj = upsert_job_posting(
+            db,
+            source="smartrecruiters",
+            company_name=company_name,
+            role_title=title,
+            location=location,
+            url=url,
+            jd_text=j.get("jobAd", {}).get("sections", {}).get("jobDescription", {}).get("text") if isinstance(j.get("jobAd"), dict) else None,
+        )
+        upserted += 1
+        upsert_company_index(db, name=obj.company_name, source="crawler")
+
+    ok_msg = urllib.parse.quote(f"Imported {len(jobs)} jobs (upserted {upserted}) from SmartRecruiters: {company_identifier}")
+    return RedirectResponse(url=f"/ui/jobs?ok={ok_msg}", status_code=303)
+
+
+@router.post("/ingest/workday", name="ui_ingest_workday")
+async def ui_ingest_workday(
+    careers_site_url: str = Form(...),
+    company_name: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    careers_site_url = careers_site_url.strip()
+    company_name = company_name.strip()
+
+    if not careers_site_url or not company_name:
+        return RedirectResponse(url="/ui/jobs?err=careers_site_url%20and%20company_name%20required", status_code=303)
+
+    try:
+        jobs = await fetch_workday_jobs(careers_site_url, company_name)
+    except Exception as e:
+        msg = urllib.parse.quote(f"Workday fetch failed: {e}")
+        return RedirectResponse(url=f"/ui/jobs?err={msg}", status_code=303)
+
+    upserted = 0
+    for j in jobs:
+        title = j.get("title") or ""
+        if not title:
+            continue
+        location = j.get("location")
+        url = j.get("url")
+
+        obj = upsert_job_posting(
+            db,
+            source="workday",
+            company_name=company_name,
+            role_title=title,
+            location=location,
+            url=url,
+            jd_text=None,
+        )
+        upserted += 1
+        upsert_company_index(db, name=obj.company_name, source="crawler")
+
+    ok_msg = urllib.parse.quote(f"Imported {len(jobs)} jobs (upserted {upserted}) from Workday")
+    return RedirectResponse(url=f"/ui/jobs?ok={ok_msg}", status_code=303)
+
+
+@router.post("/ingest/smart", name="ui_ingest_smart")
+async def ui_ingest_smart(
+    company_name: str = Form(...),
+    fetch_jd: str | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    company_name = company_name.strip()
+
+    if not company_name:
+        return RedirectResponse(url="/ui/jobs?err=company_name%20required", status_code=303)
+
+    try:
+        result = await smart_import(company_name, fetch_jd=(fetch_jd == "on"))
+
+        if not result["source"] or len(result["jobs"]) == 0:
+            msg = urllib.parse.quote(
+                f"No jobs found for '{company_name}'. Try checking the company's careers page for the correct identifier."
+            )
+            return RedirectResponse(url=f"/ui/jobs?err={msg}", status_code=303)
+
+        source = result["source"]
+        jobs = result["jobs"]
+        identifier = result["identifier"]
+
+        fetch_full_jd = fetch_jd == "on"
+        jd_map: dict[int, str | None] = {}
+
+        if fetch_full_jd and source == "greenhouse":
+            sem = asyncio.Semaphore(6)
+
+            async def _get_jd(job_id: int) -> str | None:
+                async with sem:
+                    try:
+                        detail = await fetch_greenhouse_job_detail(identifier, job_id)
+                        return detail.get("content")
+                    except Exception:
+                        return None
+
+            tasks = []
+            ids = []
+            for job in jobs:
+                job_id = job.get("id")
+                if isinstance(job_id, int):
+                    ids.append(job_id)
+                    tasks.append(_get_jd(job_id))
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for job_id, res in zip(ids, results):
+                jd_map[job_id] = res if isinstance(res, str) else None
+
+        upserted = 0
+        for job in jobs:
+            if source == "greenhouse":
+                title = job.get("title") or ""
+                location = (job.get("location") or {}).get("name")
+                url = job.get("absolute_url")
+                job_id = job.get("id")
+                jd_text = jd_map.get(job_id) if fetch_full_jd else None
+
+            elif source == "lever":
+                title = job.get("text") or job.get("title") or ""
+                location = job.get("categories", {}).get("location") if isinstance(job.get("categories"), dict) else None
+                url = job.get("hostedUrl") or job.get("applyUrl")
+                jd_text = job.get("descriptionPlain") or job.get("description")
+
+            elif source == "smartrecruiters":
+                title = job.get("name") or job.get("title") or ""
+                location = job.get("location", {}).get("city") if isinstance(job.get("location"), dict) else None
+                url = job.get("ref") or job.get("url")
+                jd_text = job.get("jobAd", {}).get("sections", {}).get("jobDescription", {}).get("text") if isinstance(job.get("jobAd"), dict) else None
+
+            else:
+                continue
+
+            if not title:
+                continue
+
+            obj = upsert_job_posting(
+                db,
+                source=source,
+                company_name=company_name,
+                role_title=title,
+                location=location,
+                url=url,
+                jd_text=jd_text,
+            )
+            upserted += 1
+            upsert_company_index(db, name=obj.company_name, source="crawler")
+
+        ok_msg = urllib.parse.quote(
+            f"Imported {len(jobs)} jobs (upserted {upserted}) from {source} for {company_name}"
+        )
+        return RedirectResponse(url=f"/ui/jobs?ok={ok_msg}", status_code=303)
+
+    except Exception as e:
+        msg = urllib.parse.quote(f"Import failed: {str(e)}")
+        return RedirectResponse(url=f"/ui/jobs?err={msg}", status_code=303)

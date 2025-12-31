@@ -20,8 +20,15 @@ class JobPostingOut(BaseModel):
     url: str | None
     posted_at: datetime | None
     jd_text: str | None
+    processed_jd: str | None
+    key_skills: list[str] | None
     fingerprint: str
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class JobPostingList(BaseModel):
+    total: int
+    items: list[JobPostingOut]
